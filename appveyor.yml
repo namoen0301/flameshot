@@ -16,6 +16,7 @@ environment:
 
 install:
 - cmd: >-
+
     if /i "%PLATFORM%"=="ARM64" (
       echo Installing NASM for OpenSSL build...
 
@@ -26,6 +27,7 @@ install:
 
 before_build:
 - cmd: >-
+
     if /i "%PLATFORM%"=="ARM64" (
       echo Building OpenSSL for ARM64...
       
@@ -59,6 +61,8 @@ before_build:
 
 build_script:
 - cmd: >-
+
+    if /i "%PLATFORM%"=="ARM64" (
 
     set QTDIR=%Qt6_INSTALL_DIR%
 
