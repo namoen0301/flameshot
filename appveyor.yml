@@ -10,80 +10,73 @@ environment:
       OPENSSL_PLATFORM: 'VC-WIN64-ARM'
     - PLATFORM: x64
       Qt6_INSTALL_DIR: 'C:\Qt\6.9\msvc2022_64'
-      BUILD_OPENSSL: 'NO'
-
   PATH: '%Qt6_INSTALL_DIR%\bin;C:\Strawberry\perl\bin;%PATH%'
+  APPVEYOR_SAVE_CACHE_ON_ERROR: false
+
+cache:
+  - C:\OpenSSL-ARM64 -> appveyor.yml
 
 build_script:
-- cmd: >-
+- pwsh: |
+    $env:QTDIR = $env:Qt6_INSTALL_DIR
+    $env:VCINSTALLDIR = "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC"
+    ls "C:/Qt/6.9/msvc2022_arm64/bin"
+    if ($env:PLATFORM -eq "ARM64") {
+        Write-Host "Installing NASM for OpenSSL build..."
+        choco install nasm -y
+        
+        $env:PATH = "C:\Program Files\NASM;$env:PATH"
+        
+        Write-Host "Building OpenSSL for ARM64..."
 
-    if /i "%PLATFORM%"=="ARM64" (
-      echo Installing NASM for OpenSSL build...
+        Set-Location c:\projects
 
-      choco install nasm -y
+        $opensslSourceUrl = "https://github.com/openssl/openssl/releases/download/openssl-3.0.18/openssl-3.0.18.tar.gz"
+        curl.exe -L -o openssl.tar.gz $opensslSourceUrl
+        7z x openssl.tar.gz -so | 7z x -si -ttar -y
+        Move-Item openssl-3.0.18 openssl -Force; Remove-Item openssl.tar.gz
 
-      set PATH=C:\Program Files\NASM;%PATH%
-
-      echo Building OpenSSL for ARM64...
-      
-      echo Perl version:
-      
-      perl --version
-      
-      echo NASM version:
-      
-      nasm -v
-      
-      cd c:\projects
-      
-      git clone --depth 1 --branch openssl-3.0.15 https://github.com/openssl/openssl.git
-      
-      cd openssl
-      
-      call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsamd64_arm64.bat"
-      
-      perl Configure %OPENSSL_PLATFORM% --prefix=C:\OpenSSL-ARM64 --openssldir=C:\OpenSSL-ARM64\ssl no-tests
-      
-      nmake
-      
-      nmake install
-      
-      echo OpenSSL built and installed to C:\OpenSSL-ARM64
-    )
-
-    set QTDIR=%Qt6_INSTALL_DIR%
-
-    set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC"
-
-    if /i "%PLATFORM%"=="ARM64" (
-      set "OPENSSL_ROOT_DIR=C:/OpenSSL-ARM64"
-    ) else (
-      set "OPENSSL_ROOT_DIR=C:/OpenSSL-v111-Win64"
-    )
-
-    rem Windows ARM64 cross-compile requires Qt host tools
-
-    set CMAKE_EXTRA_ARGS=
-
-    if /i "%PLATFORM%"=="ARM64" set CMAKE_EXTRA_ARGS=-DQT_HOST_PATH=C:\Qt\6.9\msvc2022_64 -DCMAKE_SYSTEM_PROCESSOR=aarch64
-
-    if /i "%PLATFORM%"=="x64" set CMAKE_EXTRA_ARGS=-DCMAKE_SYSTEM_PROCESSOR=x86_64
-
-    cmake -S c:\projects\source -B build -G "Visual Studio 17 2022" -A %PLATFORM% -DCMAKE_BUILD_TYPE:STRING=Release -DENABLE_OPENSSL=ON -DRUN_IN_PLACE=OFF %CMAKE_EXTRA_ARGS%
-
+        Set-Location openssl
+        
+        cmd /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsamd64_arm64.bat`" && set" | ForEach-Object {
+            if ($_ -match "^(.*?)=(.*)$") {
+                Set-Item -Force -Path "env:\$($matches[1])" -Value $matches[2]
+            }
+        }
+        
+        perl Configure $env:OPENSSL_PLATFORM --prefix=C:/OpenSSL-ARM64 --openssldir=C:/OpenSSL-ARM64/ssl no-tests no-external-tests
+        nmake
+        nmake install
+        
+        Write-Host "OpenSSL built and installed to C:\OpenSSL-ARM64"
+        $env:OPENSSL_ROOT_DIR = "C:/OpenSSL-ARM64"
+    } else {
+        $env:OPENSSL_ROOT_DIR = "C:/OpenSSL-v111-Win64"
+    }
+    
+    # Windows ARM64 cross-compile requires Qt host tools
+    $CMAKE_EXTRA_ARGS = ""
+    
+    if ($env:PLATFORM -eq "ARM64") {
+        $CMAKE_EXTRA_ARGS = "-DQT_HOST_PATH=C:/Qt/6.9/msvc2022_64 -DCMAKE_SYSTEM_PROCESSOR=ARM64 -DCMAKE_PREFIX_PATH=C:/Qt/6.9/msvc2022_arm64"
+    }
+    
+    if ($env:PLATFORM -eq "x64") {
+        $CMAKE_EXTRA_ARGS = "-DCMAKE_SYSTEM_PROCESSOR=x86_64 -DCMAKE_PREFIX_PATH=C:/Qt/6.9/msvc2022_64"
+    }
+    
+    cmake -S c:/projects/source -B build -G "Visual Studio 17 2022" -A $env:PLATFORM -DCMAKE_BUILD_TYPE:STRING=Release -DENABLE_OPENSSL=ON -DRUN_IN_PLACE=OFF $CMAKE_EXTRA_ARGS.Split(' ')
+    
     cmake --build build --parallel 2 --config "Release"
-
-    cd build 
-
+    
+    Set-Location build
     cpack -G WIX -B package
-
-    mkdir artifact
-
-    cp package/*.msi artifact\.
-
-    cp src/Release/*.exe artifact\.
-
-    7z a -tzip artifact_%PLATFORM%.zip artifact/
+    
+    New-Item -ItemType Directory -Force -Path artifact
+    Copy-Item package/*.msi artifact\
+    Copy-Item src/Release/*.exe artifact\
+    
+    7z a -tzip "artifact_$($env:PLATFORM).zip" artifact/
 
 artifacts:
 - path: build\package\*.msi
