@@ -14,7 +14,7 @@ environment:
 
   PATH: '%Qt6_INSTALL_DIR%\bin;C:\Strawberry\perl\bin;%PATH%'
 
-install:
+build_script:
 - cmd: >-
 
     if /i "%PLATFORM%"=="ARM64" (
@@ -23,12 +23,7 @@ install:
       choco install nasm -y
 
       set PATH=C:\Program Files\NASM;%PATH%
-    )
 
-before_build:
-- cmd: >-
-
-    if /i "%PLATFORM%"=="ARM64" (
       echo Building OpenSSL for ARM64...
       
       echo Perl version:
@@ -54,15 +49,7 @@ before_build:
       nmake install
       
       echo OpenSSL built and installed to C:\OpenSSL-ARM64
-    ) else (
-      echo Skipping OpenSSL build for x64, using pre-installed version
     )
-
-
-build_script:
-- cmd: >-
-
-    if /i "%PLATFORM%"=="ARM64" (
 
     set QTDIR=%Qt6_INSTALL_DIR%
 
