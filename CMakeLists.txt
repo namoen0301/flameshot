@@ -198,9 +198,11 @@ if(WIN32)
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/packaging/win-installer/LICENSE/GPL-3.0.txt")
     set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 
-    # The correct way would be to include both x32 and x64 into one installer and install the appropriate one. CMake
-    # does not support that, so there are two separate GUID's
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    # The correct way would be to include both x32 and x64 and arm64 into one installer and install the appropriate one. CMake
+    # does not support that, so there are three separate GUID's
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+      set(CPACK_WIX_UPGRADE_GUID "2DEF200B-EE4B-4364-893E-D80351DC3C5F")
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
       set(CPACK_WIX_UPGRADE_GUID "26D8062A-66D9-48D9-8924-42090FB9B3F9")
     else()
       set(CPACK_WIX_UPGRADE_GUID "2C53E1B9-51D9-4429-AAE4-B02221959AA5")

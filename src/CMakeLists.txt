@@ -429,7 +429,8 @@ if (WIN32)
         list(APPEND WINDEPLOYQT_SEARCH_PATHS "${prefix}/bin")
     endforeach()
     list(APPEND WINDEPLOYQT_SEARCH_PATHS "$ENV{QTDIR}/bin")
-    
+    list(APPEND WINDEPLOYQT_SEARCH_PATHS "${QT_HOST_PATH}/bin")
+
     find_program(WINDEPLOYQT_EXE windeployqt.exe
         PATHS ${WINDEPLOYQT_SEARCH_PATHS}
     )
@@ -443,13 +444,16 @@ if (WIN32)
             set(BINARIES_TYPE --debug)
         endif ()
 
+        list(GET CMAKE_PREFIX_PATH 0 TARGET_QT_DIR)
+        set(QTPATHS_ARG --qtpaths "${TARGET_QT_DIR}/bin/qtpaths.exe")
+
         add_custom_command(
                 TARGET flameshot
                 POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/windeployqt_stuff
                 COMMAND
                 ${WINDEPLOYQT_EXE} ${BINARIES_TYPE} --no-translations --compiler-runtime --no-system-d3d-compiler
-                --no-quick-import --dir ${CMAKE_BINARY_DIR}/windeployqt_stuff $<TARGET_FILE:flameshot>
+                --no-quick-import ${QTPATHS_ARG} --dir ${CMAKE_BINARY_DIR}/windeployqt_stuff $<TARGET_FILE:flameshot>
                 # copy translations manually QM_FILES
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/windeployqt_stuff/translations
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/src/translations
