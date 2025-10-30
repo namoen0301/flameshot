@@ -30,13 +30,11 @@ build_script:
         Write-Host "Building OpenSSL for ARM64..."
 
         Set-Location c:\projects
-
+        
         $opensslSourceUrl = "https://github.com/openssl/openssl/releases/download/openssl-3.0.18/openssl-3.0.18.tar.gz"
         curl.exe -L -o openssl.tar.gz $opensslSourceUrl
         7z x openssl.tar.gz -so | 7z x -si -ttar -y
         Move-Item openssl-3.0.18 openssl -Force; Remove-Item openssl.tar.gz
-
-        Set-Location openssl
         
         cmd /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsamd64_arm64.bat`" && set" | ForEach-Object {
             if ($_ -match "^(.*?)=(.*)$") {
@@ -44,12 +42,15 @@ build_script:
             }
         }
         
+        Set-Location openssl
+
         perl Configure $env:OPENSSL_PLATFORM --prefix=C:/OpenSSL-ARM64 --openssldir=C:/OpenSSL-ARM64/ssl no-tests no-external-tests
         nmake
         nmake install
         
         Write-Host "OpenSSL built and installed to C:\OpenSSL-ARM64"
         $env:OPENSSL_ROOT_DIR = "C:/OpenSSL-ARM64"
+        Set-Location c:\projects\source
     } else {
         $env:OPENSSL_ROOT_DIR = "C:/OpenSSL-v111-Win64"
     }
