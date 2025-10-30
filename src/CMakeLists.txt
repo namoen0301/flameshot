@@ -449,7 +449,7 @@ if (WIN32)
         set(QTPATHS_ARG "")
 
         if(DEFINED QT_HOST_PATH)
-            set(QTPATHS_ARG --qtpaths "${TARGET_QT_DIR}/bin/qtpaths.bat")
+            set(QTPATHS_ARG --qtpaths "${QT_HOST_PATH}/bin/qtpaths.bat")
             message(STATUS ">>> ${CMAKE_SYSTEM_PROCESSOR}")
             message(STATUS ">>> found ARM64 cross-compile!")
             message(STATUS "WINDEPLOYQT_EXE = ${WINDEPLOYQT_EXE}")
