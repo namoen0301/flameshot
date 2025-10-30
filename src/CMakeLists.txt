@@ -429,7 +429,8 @@ if (WIN32)
         list(APPEND WINDEPLOYQT_SEARCH_PATHS "${prefix}/bin")
     endforeach()
     list(APPEND WINDEPLOYQT_SEARCH_PATHS "$ENV{QTDIR}/bin")
-
+    list(APPEND WINDEPLOYQT_SEARCH_PATHS "${QT_HOST_PATH}/bin")
+    
     find_program(WINDEPLOYQT_EXE windeployqt.exe
         PATHS ${WINDEPLOYQT_SEARCH_PATHS}
     )
