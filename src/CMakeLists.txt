@@ -444,7 +444,9 @@ if (WIN32)
         endif ()
 
         list(GET CMAKE_PREFIX_PATH 0 TARGET_QT_DIR)
-    
+
+        set(QTPATHS_ARG "")
+
         if(DEFINED QT_HOST_PATH)
             set(QTPATHS_ARG --qtpaths "${TARGET_QT_DIR}/bin/qtpaths.bat")
             message(STATUS ">>> ${CMAKE_SYSTEM_PROCESSOR}")
@@ -456,6 +458,7 @@ if (WIN32)
         add_custom_command(
                 TARGET flameshot
                 POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E echo "Running windeployqt with args: ${QTPATHS_ARG}"
                 COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/windeployqt_stuff
                 COMMAND
                 ${WINDEPLOYQT_EXE} ${QTPATHS_ARG} ${BINARIES_TYPE} --no-translations --compiler-runtime --no-system-d3d-compiler
